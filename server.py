@@ -156,28 +156,27 @@ class GameServer:
         open("players/" + playerToMove + "/timestamp", "w").write(str(time.time()))
         self.log(playerToMove + " moved to " + str(x) + "/" + str(y))
 
-    def getPlayerAction(self, player: str):
-        html = requests.get(
-            "https://github.com/" + player + "/gitland-client/blob/master/act",
-            headers={"Cache-Control": "no-cache", "Pragma": "no-cache"}
-        ).text
-        action = re.findall(r'blob-code-inner .*>(.*)<', html)
-        if action:
-            return action[0].strip()
-        else:
-            print('failed to find action in HTML for player ' + player)
-            return ''
-
     def getAllPlayerActions(self) -> dict:
-        executor = futures.ThreadPoolExecutor()
-        requests = {}
+        # Building GraphQL query
+        i = 0
+        query = "{\n"
         for player in os.listdir("players"):
             if os.path.isdir("players/" + player):
-                 request = executor.submit(lambda: self.getPlayerAction(player))
-                 requests[player] = request
+                query = query + "player" + str(i) + ": repository(owner: \"" + player + "\", name: \"gitland-client\") {\nowner {\nlogin\n}\ncontent: object(expression: \"master:act\") {\n... on Blob {\ntext\n}\n}\n}\n"
+                i = i + 1
+        query = query + "}"
+
+        # Execute API call
+        token = os.environ.get('GITHUB_TOKEN') # https://github.com/settings/tokens
+        request = requests.post('https://api.github.com/graphql', json={'query': query}, headers={"Authorization": "Bearer " + token})
+
+        # Simplify format
         actions = {}
-        for player, request in requests.items():
-            actions[player] = request.result()
+        print(request.json()['data'].values())
+        for entry in request.json()['data'].values():
+            if entry != None:
+                print(entry)
+                actions[entry['owner']['login']] = entry['content']['text'].strip()
         return actions
 
     def updateGameState(self):
@@ -193,6 +192,8 @@ class GameServer:
                 x += 1
             y += 1
 
+        actions = self.getAllPlayerActions()
+
         for player in os.listdir("players"):
             if os.path.isdir("players/" + player):
                 x = int(open("players/" + player + "/x").read().strip())
@@ -203,7 +204,7 @@ class GameServer:
                 kick = False
 
                 # player input
-                action = self.getPlayerAction(player)
+                action = actions[player]
 
                 if action == "left":
                     self.movePlayer(player, x - 1, y)
