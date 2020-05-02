@@ -204,7 +204,7 @@ class GameServer:
                 kick = False
 
                 # player input
-                action = actions[player]
+                action = actions.get(player)
 
                 if action == "left":
                     self.movePlayer(player, x - 1, y)
