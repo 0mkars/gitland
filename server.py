@@ -5,7 +5,6 @@
 # this was getting it done quickly.
 
 import os, requests, time, re, sys, shutil
-from concurrent import futures
 from collections import Counter
 
 class GameServer:
