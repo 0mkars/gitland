@@ -172,10 +172,8 @@ class GameServer:
 
         # Simplify format
         actions = {}
-        print(request.json()['data'].values())
         for entry in request.json()['data'].values():
             if entry != None:
-                print(entry)
                 actions[entry['owner']['login']] = entry['content']['text'].strip()
         return actions
 
