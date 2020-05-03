@@ -167,13 +167,18 @@ class GameServer:
 
         # Execute API call
         token = os.environ.get('GITHUB_TOKEN') # https://github.com/settings/tokens
-        request = requests.post('https://api.github.com/graphql', json={'query': query}, headers={"Authorization": "Bearer " + token})
+        try:
+            request = requests.post('https://api.github.com/graphql', json={'query': query}, headers={"Authorization": "Bearer " + token})
 
-        # Simplify format
-        actions = {}
-        for entry in request.json()['data'].values():
-            if entry != None:
-                actions[entry['owner']['login']] = entry['content']['text'].strip()
+            # Simplify format
+            actions = {}
+            for entry in request.json()['data'].values():
+                if entry != None:
+                    actions[entry['owner']['login']] = entry['content']['text'].strip()
+        except Exception as err:
+            print(str(err))
+            actions = {}
+
         return actions
 
     def updateGameState(self):
@@ -190,6 +195,9 @@ class GameServer:
             y += 1
 
         actions = self.getAllPlayerActions()
+        if actions == {}:
+            self.log("couldn't get actions, no game state update")
+            return
 
         for player in os.listdir("players"):
             if os.path.isdir("players/" + player):
