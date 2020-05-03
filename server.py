@@ -27,7 +27,12 @@ class GameServer:
         try:
             joinRequests = requests.get(
                 "https://api.github.com/repos/programical/gitland/issues?state=open",
-                headers={"Accept":"application/vnd.github.v3+json", "Cache-Control": "no-cache", "Pragma": "no-cache"}
+                headers = {
+                    "Accept":"application/vnd.github.v3+json",
+                    "Cache-Control": "no-cache",
+                    "Pragma": "no-cache",
+                    "Authorization": "Bearer " + os.environ.get("GITHUB_TOKEN")
+                }
             ).json()
         except Exception:
             print("connection issues - waiting")
